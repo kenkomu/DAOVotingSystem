@@ -1,101 +1,235 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Wallet, Vote, FileText, CheckCircle, XCircle } from 'lucide-react'
+
+// Mock functions for blockchain interactions
+const connectWallet = async () => ({ address: '0x1234...5678' })
+const checkRegistration = async (address) => Math.random() > 0.5
+const registerVoter = async (address) => true
+const getProposals = async () => [
+  { id: 1, title: 'Proposal 1', description: 'Description for Proposal 1', status: 'Active' },
+  { id: 2, title: 'Proposal 2', description: 'Description for Proposal 2', status: 'Completed' },
+]
+const createProposal = async (title, description) => ({ id: 3, title, description, status: 'Active' })
+const castVote = async (proposalId, vote) => true
+const getResults = async (proposalId) => ({ yes: 75, no: 25 })
+
+export default function DAOVotingApp() {
+  const [wallet, setWallet] = useState(null)
+  const [isRegistered, setIsRegistered] = useState(false)
+  const [proposals, setProposals] = useState([])
+  const [newProposal, setNewProposal] = useState({ title: '', description: '' })
+  const [selectedProposal, setSelectedProposal] = useState(null)
+  const [voteChoice, setVoteChoice] = useState(null)
+  const [statusMessage, setStatusMessage] = useState(null)
+  const [statusType, setStatusType] = useState('success')
+
+  useEffect(() => {
+    if (wallet) {
+      checkRegistration(wallet.address).then(setIsRegistered)
+      getProposals().then(setProposals)
+    }
+  }, [wallet])
+
+  const displayStatusMessage = (message, type = 'success') => {
+    setStatusMessage(message)
+    setStatusType(type)
+    setTimeout(() => setStatusMessage(null), 3000)
+  }
+
+  const handleConnectWallet = async () => {
+    try {
+      const connectedWallet = await connectWallet()
+      setWallet(connectedWallet)
+      displayStatusMessage(`Wallet Connected: ${connectedWallet.address}`, 'success')
+    } catch (error) {
+      displayStatusMessage("Could not connect to wallet.", 'error')
+    }
+  }
+
+  const handleRegister = async () => {
+    try {
+      await registerVoter(wallet.address)
+      setIsRegistered(true)
+      displayStatusMessage("You are now registered as a DAO voter.", 'success')
+    } catch (error) {
+      displayStatusMessage("Could not register as a voter.", 'error')
+    }
+  }
+
+  const handleCreateProposal = async () => {
+    try {
+      const proposal = await createProposal(newProposal.title, newProposal.description)
+      setProposals([...proposals, proposal])
+      setNewProposal({ title: '', description: '' })
+      displayStatusMessage("Your new proposal has been submitted.", 'success')
+    } catch (error) {
+      displayStatusMessage("Could not create the proposal.", 'error')
+    }
+  }
+
+  const handleVote = async () => {
+    try {
+      await castVote(selectedProposal.id, voteChoice)
+      displayStatusMessage("Your anonymous vote has been recorded.", 'success')
+      setVoteChoice(null)
+      setSelectedProposal(null)
+    } catch (error) {
+      displayStatusMessage("Could not cast your vote.", 'error')
+    }
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">DAO Voting System</h1>
+      
+      {statusMessage && (
+        <div className={`mb-4 p-3 rounded ${statusType === 'error' ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}>
+          {statusMessage}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+      
+      {!wallet ? (
+        <Button onClick={handleConnectWallet}>
+          <Wallet className="mr-2 h-4 w-4" /> Connect Wallet
+        </Button>
+      ) : !isRegistered ? (
+        <Button onClick={handleRegister}>
+          <CheckCircle className="mr-2 h-4 w-4" /> Register as DAO Voter
+        </Button>
+      ) : (
+        <Tabs defaultValue="proposals" className="w-full">
+          <TabsList>
+            <TabsTrigger value="proposals">Proposals</TabsTrigger>
+            <TabsTrigger value="create">Create Proposal</TabsTrigger>
+            <TabsTrigger value="vote">Vote</TabsTrigger>
+            <TabsTrigger value="results">Results</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="proposals">
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Proposals</CardTitle>
+                <CardDescription>View and select proposals for voting</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {proposals.map(proposal => (
+                  <Button
+                    key={proposal.id}
+                    variant="outline"
+                    className="w-full mb-2 justify-start"
+                    onClick={() => setSelectedProposal(proposal)}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    {proposal.title}
+                  </Button>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="create">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create New Proposal</CardTitle>
+                <CardDescription>Submit a new proposal for DAO voting</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      id="title"
+                      value={newProposal.title}
+                      onChange={(e) => setNewProposal({...newProposal, title: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Input
+                      id="description"
+                      value={newProposal.description}
+                      onChange={(e) => setNewProposal({...newProposal, description: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button onClick={handleCreateProposal}>Create Proposal</Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="vote">
+            <Card>
+              <CardHeader>
+                <CardTitle>Cast Your Vote</CardTitle>
+                <CardDescription>Vote on the selected proposal</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {selectedProposal ? (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">{selectedProposal.title}</h3>
+                    <p>{selectedProposal.description}</p>
+                    <div className="flex space-x-4">
+                      <Button
+                        variant={voteChoice === 'yes' ? 'default' : 'outline'}
+                        onClick={() => setVoteChoice('yes')}
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" /> Yes
+                      </Button>
+                      <Button
+                        variant={voteChoice === 'no' ? 'default' : 'outline'}
+                        onClick={() => setVoteChoice('no')}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" /> No
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Please select a proposal from the Proposals tab.</p>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button onClick={handleVote} disabled={!selectedProposal || !voteChoice}>
+                  <Vote className="mr-2 h-4 w-4" /> Cast Vote
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="results">
+            <Card>
+              <CardHeader>
+                <CardTitle>Voting Results</CardTitle>
+                <CardDescription>View results for completed proposals</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {proposals
+                  .filter(p => p.status === 'Completed')
+                  .map(proposal => (
+                    <div key={proposal.id} className="mb-4">
+                      <h3 className="text-lg font-semibold">{proposal.title}</h3>
+                      <div className="flex justify-between mt-2">
+                        <span>Yes: 75%</span>
+                        <span>No: 25%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                        <div className="bg-green-600 h-2.5 rounded-full" style={{width: '75%'}}></div>
+                      </div>
+                    </div>
+                  ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
-  );
+  )
 }
