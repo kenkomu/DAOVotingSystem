@@ -21,6 +21,7 @@ const castVote = async (proposalId, vote) => true
 const getResults = async (proposalId) => ({ yes: 75, no: 25 })
 
 
+
 export default function DAOVotingApp() {
   const [wallet, setWallet] = useState(null)
   const [isRegistered, setIsRegistered] = useState(false)
