@@ -71,25 +71,26 @@ export default function DAOVotingApp() {
     setTimeout(() => setStatusMessage(null), 3000)
   }
 
-  const handleConnectWallet = async () => {
-    try {
-      const connectedWallet = await connectWallet()
-      setWallet(connectedWallet)
-      displayStatusMessage(`Wallet Connected: ${connectedWallet.address}`, "success")
-    } catch {
-      displayStatusMessage("Please connect your wallet manually.", "info")
-    }
-  }
+  // Commented out unused functions to avoid ESLint errors
+  // const handleConnectWallet = async () => {
+  //   try {
+  //     const connectedWallet = await connectWallet()
+  //     setWallet(connectedWallet)
+  //     displayStatusMessage(`Wallet Connected: ${connectedWallet.address}`, "success")
+  //   } catch {
+  //     displayStatusMessage("Please connect your wallet manually.", "info")
+  //   }
+  // }
 
-  const handleRegister = async () => {
-    try {
-      await registerVoter(wallet!.address)
-      setIsRegistered(true)
-      displayStatusMessage("You are now registered as a DAO voter.", "success")
-    } catch {
-      displayStatusMessage("Could not register as a voter.", "error")
-    }
-  }
+  // const handleRegister = async () => {
+  //   try {
+  //     await registerVoter(wallet!.address)
+  //     setIsRegistered(true)
+  //     displayStatusMessage("You are now registered as a DAO voter.", "success")
+  //   } catch {
+  //     displayStatusMessage("Could not register as a voter.", "error")
+  //   }
+  // }
 
   const handleCreateProposal = async () => {
     try {
