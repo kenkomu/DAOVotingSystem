@@ -23,7 +23,7 @@ interface Proposal {
 //   return addr ? `${addr.slice(0, 5)}...${addr.slice(-4)}` : ""
 // }
 
-const checkRegistration = async () => Math.random() > 0.5
+const checkRegistration = async (address: string) => Math.random() > 0.5
 // const registerVoter = async () => true
 const getProposals = async (): Promise<Proposal[]> => [
   { id: 1, title: "Proposal 1", description: "Description for Proposal 1", status: "Active" },
