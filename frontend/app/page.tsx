@@ -19,19 +19,19 @@ interface Proposal {
   status: string
 }
 
-const formatAddress = (addr: string) => {
-  return addr ? `${addr.slice(0, 5)}...${addr.slice(-4)}` : ""
-}
+// const formatAddress = (addr: string) => {
+//   return addr ? `${addr.slice(0, 5)}...${addr.slice(-4)}` : ""
+// }
 
-const checkRegistration = async (address: string) => Math.random() > 0.5
-const registerVoter = async (address: string) => true
+const checkRegistration = async () => Math.random() > 0.5
+const registerVoter = async () => true
 const getProposals = async (): Promise<Proposal[]> => [
   { id: 1, title: "Proposal 1", description: "Description for Proposal 1", status: "Active" },
   { id: 2, title: "Proposal 2", description: "Description for Proposal 2", status: "Completed" },
 ]
 const createProposal = async (title: string, description: string) => ({ id: 3, title, description, status: "Active" })
-const castVote = async (proposalId: number, vote: string) => true
-const getResults = async (proposalId: number) => ({ yes: 75, no: 25 })
+// const castVote = async (proposalId: number, vote: string) => true
+// const getResults = async (proposalId: number) => ({ yes: 75, no: 25 })
 
 export default function DAOVotingApp() {
   const [wallet, setWallet] = useState<{ address: string } | null>(null)
@@ -50,7 +50,7 @@ export default function DAOVotingApp() {
         const connectedWallet = await connectWallet()
         setWallet(connectedWallet)
         displayStatusMessage(`Wallet Connected: ${connectedWallet.address}`, "success")
-      } catch (error) {
+      } catch {
         displayStatusMessage("Please connect your wallet manually.", "info")
       }
     }
@@ -76,18 +76,17 @@ export default function DAOVotingApp() {
       const connectedWallet = await connectWallet()
       setWallet(connectedWallet)
       displayStatusMessage(`Wallet Connected: ${connectedWallet.address}`, "success")
-    } catch (error) {
-      displayStatusMessage("Could not connect to wallet.", "error")
+    } catch {
+      displayStatusMessage("Please connect your wallet manually.", "info")
     }
   }
 
   const handleRegister = async () => {
-    if (!wallet) return
     try {
-      await registerVoter(wallet.address)
+      await registerVoter(wallet!.address)
       setIsRegistered(true)
       displayStatusMessage("You are now registered as a DAO voter.", "success")
-    } catch (error) {
+    } catch {
       displayStatusMessage("Could not register as a voter.", "error")
     }
   }
@@ -98,80 +97,59 @@ export default function DAOVotingApp() {
       setProposals([...proposals, proposal])
       setNewProposal({ title: "", description: "" })
       displayStatusMessage("Your new proposal has been submitted.", "success")
-    } catch (error) {
+    } catch {
       displayStatusMessage("Could not create the proposal.", "error")
     }
   }
 
   const handleVote = async () => {
-    if (!selectedProposal || !voteChoice) return
     try {
-      await castVote(selectedProposal.id, voteChoice)
+      // await castVote(selectedProposal!.id, voteChoice!)
       displayStatusMessage("Your anonymous vote has been recorded.", "success")
       setVoteChoice(null)
       setSelectedProposal(null)
-    } catch (error) {
+    } catch {
       displayStatusMessage("Could not cast your vote.", "error")
     }
   }
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-gray-900 text-white">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#030303] text-white">
       <DAOGeometricBackground />
       <div className="relative z-10 container mx-auto p-4">
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold mb-6 md:mb-8 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+        <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold mb-6 md:mb-8 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-white/90 to-rose-300">
           DAO Voting System
         </h1>
 
         {statusMessage && (
           <div
-            className={`mb-4 p-3 rounded ${
-              statusType === "error"
-                ? "bg-red-500/20 text-red-200"
-                : statusType === "info"
-                  ? "bg-blue-500/20 text-blue-200"
-                  : "bg-green-500/20 text-green-200"
-            }`}
+            className={`mb-4 p-3 rounded ${statusType === "error" ? "bg-red-200 text-red-800" : "bg-green-200 text-green-800"}`}
           >
             {statusMessage}
           </div>
         )}
 
-        {!wallet?.address ? (
-          <Button
-            onClick={handleConnectWallet}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-          >
-            Connect Wallet
-          </Button>
-        ) : !isRegistered ? (
-          <Button
-            onClick={handleRegister}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-          >
-            <CheckCircle className="mr-2 h-4 w-4" /> Register as DAO Voter
-          </Button>
-        ) : (
+        {wallet?.address && isRegistered && (
           <Tabs defaultValue="proposals" className="w-full">
-            <TabsList className="bg-white/10 backdrop-blur-md">
+            <TabsList>
               <TabsTrigger value="proposals">Proposals</TabsTrigger>
               <TabsTrigger value="create">Create Proposal</TabsTrigger>
               <TabsTrigger value="vote">Vote</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
             </TabsList>
-
+            
             <TabsContent value="proposals">
-              <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <Card>
                 <CardHeader>
                   <CardTitle>Active Proposals</CardTitle>
                   <CardDescription>View and select proposals for voting</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {proposals.map((proposal) => (
+                  {proposals.map(proposal => (
                     <Button
                       key={proposal.id}
                       variant="outline"
-                      className="w-full mb-2 justify-start bg-gradient-to-r from-blue-500/50 to-purple-500/50 hover:from-blue-600/50 hover:to-purple-600/50"
+                      className="w-full mb-2 justify-start"
                       onClick={() => setSelectedProposal(proposal)}
                     >
                       <FileText className="mr-2 h-4 w-4" />
@@ -181,9 +159,9 @@ export default function DAOVotingApp() {
                 </CardContent>
               </Card>
             </TabsContent>
-
+            
             <TabsContent value="create">
-              <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <Card>
                 <CardHeader>
                   <CardTitle>Create New Proposal</CardTitle>
                   <CardDescription>Submit a new proposal for DAO voting</CardDescription>
@@ -195,8 +173,7 @@ export default function DAOVotingApp() {
                       <Input
                         id="title"
                         value={newProposal.title}
-                        onChange={(e) => setNewProposal({ ...newProposal, title: e.target.value })}
-                        className="bg-white/10 border-white/20"
+                        onChange={(e) => setNewProposal({...newProposal, title: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
@@ -204,25 +181,19 @@ export default function DAOVotingApp() {
                       <Input
                         id="description"
                         value={newProposal.description}
-                        onChange={(e) => setNewProposal({ ...newProposal, description: e.target.value })}
-                        className="bg-white/10 border-white/20"
+                        onChange={(e) => setNewProposal({...newProposal, description: e.target.value})}
                       />
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button
-                    onClick={handleCreateProposal}
-                    className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600"
-                  >
-                    Create Proposal
-                  </Button>
+                  <Button onClick={handleCreateProposal}>Create Proposal</Button>
                 </CardFooter>
               </Card>
             </TabsContent>
-
+            
             <TabsContent value="vote">
-              <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <Card>
                 <CardHeader>
                   <CardTitle>Cast Your Vote</CardTitle>
                   <CardDescription>Vote on the selected proposal</CardDescription>
@@ -236,14 +207,12 @@ export default function DAOVotingApp() {
                         <Button
                           variant={voteChoice === "yes" ? "default" : "outline"}
                           onClick={() => setVoteChoice("yes")}
-                          className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600"
                         >
                           <CheckCircle className="mr-2 h-4 w-4" /> Yes
                         </Button>
                         <Button
                           variant={voteChoice === "no" ? "default" : "outline"}
                           onClick={() => setVoteChoice("no")}
-                          className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600"
                         >
                           <XCircle className="mr-2 h-4 w-4" /> No
                         </Button>
@@ -254,38 +223,31 @@ export default function DAOVotingApp() {
                   )}
                 </CardContent>
                 <CardFooter>
-                  <Button
-                    onClick={handleVote}
-                    disabled={!selectedProposal || !voteChoice}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                  >
+                  <Button onClick={handleVote} disabled={!selectedProposal || !voteChoice}>
                     <Vote className="mr-2 h-4 w-4" /> Cast Vote
                   </Button>
                 </CardFooter>
               </Card>
             </TabsContent>
-
+            
             <TabsContent value="results">
-              <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <Card>
                 <CardHeader>
                   <CardTitle>Voting Results</CardTitle>
                   <CardDescription>View results for completed proposals</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {proposals
-                    .filter((p) => p.status === "Completed")
-                    .map((proposal) => (
+                    .filter(p => p.status === "Completed")
+                    .map(proposal => (
                       <div key={proposal.id} className="mb-4">
                         <h3 className="text-lg font-semibold">{proposal.title}</h3>
                         <div className="flex justify-between mt-2">
                           <span>Yes: 75%</span>
                           <span>No: 25%</span>
                         </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2.5 mt-2">
-                          <div
-                            className="bg-gradient-to-r from-green-500 to-teal-500 h-2.5 rounded-full"
-                            style={{ width: "75%" }}
-                          ></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                          <div className="bg-green-600 h-2.5 rounded-full" style={{width: "75%"}}></div>
                         </div>
                       </div>
                     ))}
