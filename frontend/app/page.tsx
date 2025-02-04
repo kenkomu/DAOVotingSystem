@@ -24,7 +24,7 @@ interface Proposal {
 // }
 
 const checkRegistration = async () => Math.random() > 0.5
-const registerVoter = async () => true
+// const registerVoter = async () => true
 const getProposals = async (): Promise<Proposal[]> => [
   { id: 1, title: "Proposal 1", description: "Description for Proposal 1", status: "Active" },
   { id: 2, title: "Proposal 2", description: "Description for Proposal 2", status: "Completed" },
