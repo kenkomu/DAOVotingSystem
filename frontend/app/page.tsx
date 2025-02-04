@@ -19,19 +19,12 @@ interface Proposal {
   status: string
 }
 
-// const formatAddress = (addr: string) => {
-//   return addr ? `${addr.slice(0, 5)}...${addr.slice(-4)}` : ""
-// }
-
-const checkRegistration = async (address: string) => Math.random() > 0.5
-// const registerVoter = async () => true
+const checkRegistration = async () => Math.random() > 0.5
 const getProposals = async (): Promise<Proposal[]> => [
   { id: 1, title: "Proposal 1", description: "Description for Proposal 1", status: "Active" },
   { id: 2, title: "Proposal 2", description: "Description for Proposal 2", status: "Completed" },
 ]
 const createProposal = async (title: string, description: string) => ({ id: 3, title, description, status: "Active" })
-// const castVote = async (proposalId: number, vote: string) => true
-// const getResults = async (proposalId: number) => ({ yes: 75, no: 25 })
 
 export default function DAOVotingApp() {
   const [wallet, setWallet] = useState<{ address: string } | null>(null)
@@ -60,7 +53,7 @@ export default function DAOVotingApp() {
 
   useEffect(() => {
     if (wallet) {
-      checkRegistration(wallet.address).then(setIsRegistered)
+      checkRegistration().then(setIsRegistered)
       getProposals().then(setProposals)
     }
   }, [wallet])
@@ -70,27 +63,6 @@ export default function DAOVotingApp() {
     setStatusType(type)
     setTimeout(() => setStatusMessage(null), 3000)
   }
-
-  // Commented out unused functions to avoid ESLint errors
-  // const handleConnectWallet = async () => {
-  //   try {
-  //     const connectedWallet = await connectWallet()
-  //     setWallet(connectedWallet)
-  //     displayStatusMessage(`Wallet Connected: ${connectedWallet.address}`, "success")
-  //   } catch {
-  //     displayStatusMessage("Please connect your wallet manually.", "info")
-  //   }
-  // }
-
-  // const handleRegister = async () => {
-  //   try {
-  //     await registerVoter(wallet!.address)
-  //     setIsRegistered(true)
-  //     displayStatusMessage("You are now registered as a DAO voter.", "success")
-  //   } catch {
-  //     displayStatusMessage("Could not register as a voter.", "error")
-  //   }
-  // }
 
   const handleCreateProposal = async () => {
     try {
@@ -105,7 +77,6 @@ export default function DAOVotingApp() {
 
   const handleVote = async () => {
     try {
-      // await castVote(selectedProposal!.id, voteChoice!)
       displayStatusMessage("Your anonymous vote has been recorded.", "success")
       setVoteChoice(null)
       setSelectedProposal(null)
@@ -261,4 +232,3 @@ export default function DAOVotingApp() {
     </div>
   )
 }
-
