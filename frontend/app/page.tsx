@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import axios from "axios"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Vote, FileText, CheckCircle, XCircle } from "lucide-react"
 import DAOGeometricBackground from "../components/dao-geometric-background"
+import StatusMessage from "./StatusMessage"
+import ProposalList from "./ProposalList"
+import CreateProposal from "./CreateProposal"
+import Vote from "./Vote"
+import Results from "./Results"
 
 // Dummy function for demonstration purposes. Replace with your actual implementation.
 const connectWallet = async () => ({ address: "0x1234567890abcdef" })
@@ -19,16 +20,37 @@ interface Proposal {
   status: string
 }
 
-const checkRegistration = async () => Math.random() > 0.5
+interface User {
+  address: string
+  role: "admin" | "member"
+}
+
+// Dummy data for users and proposals
+const users: User[] = [
+  { address: "0x1234567890abcdef", role: "admin" },
+  { address: "0xabcdef1234567890", role: "member" },
+]
+
+const checkRegistration = async (address: string): Promise<boolean> => {
+  return users.some(user => user.address === address)
+}
+
+const getUserRole = async (address: string): Promise<"admin" | "member"> => {
+  const user = users.find(user => user.address === address)
+  return user ? user.role : "member"
+}
+
 const getProposals = async (): Promise<Proposal[]> => [
   { id: 1, title: "Proposal 1", description: "Description for Proposal 1", status: "Active" },
   { id: 2, title: "Proposal 2", description: "Description for Proposal 2", status: "Completed" },
 ]
+
 const createProposal = async (title: string, description: string) => ({ id: 3, title, description, status: "Active" })
 
 export default function DAOVotingApp() {
   const [wallet, setWallet] = useState<{ address: string } | null>(null)
   const [isRegistered, setIsRegistered] = useState(false)
+  const [userRole, setUserRole] = useState<"admin" | "member">("member")
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [newProposal, setNewProposal] = useState({ title: "", description: "" })
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null)
@@ -53,7 +75,8 @@ export default function DAOVotingApp() {
 
   useEffect(() => {
     if (wallet) {
-      checkRegistration().then(setIsRegistered)
+      checkRegistration(wallet.address).then(setIsRegistered)
+      getUserRole(wallet.address).then(setUserRole)
       getProposals().then(setProposals)
     }
   }, [wallet])
@@ -76,12 +99,46 @@ export default function DAOVotingApp() {
   }
 
   const handleVote = async () => {
+    if (!selectedProposal || !voteChoice) {
+      setStatusMessage("Please select a proposal and a vote choice.")
+      return
+    }
+
     try {
-      displayStatusMessage("Your anonymous vote has been recorded.", "success")
-      setVoteChoice(null)
-      setSelectedProposal(null)
-    } catch {
-      displayStatusMessage("Could not cast your vote.", "error")
+      const response = await axios.post<{ receipt: string }>("http://127.0.0.1:8080/submit_vote", {
+        voter_id: 123, // Replace with actual voter ID (e.g., wallet address)
+        proposal_id: selectedProposal.id,
+        vote: voteChoice === "yes",
+      })
+
+      const proof = response.data.receipt
+      console.log("Proof received:", proof)
+
+      // Verify the proof (you can use a library or send it to the backend for verification)
+      setStatusMessage("Your vote has been recorded and verified.")
+    } catch (error) {
+      console.error("Error submitting vote:", error)
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          console.error("Response data:", error.response.data)
+          console.error("Response status:", error.response.status)
+          console.error("Response headers:", error.response.headers)
+          setStatusMessage(`Failed to submit your vote: ${error.response.data}`)
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error("Request data:", error.request)
+          setStatusMessage("Failed to submit your vote: No response from server.")
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          console.error("Error message:", error.message)
+          setStatusMessage(`Failed to submit your vote: ${error.message}`)
+        }
+      } else {
+        console.error("Unexpected error:", error)
+        setStatusMessage("An unexpected error occurred.")
+      }
     }
   }
 
@@ -93,138 +150,33 @@ export default function DAOVotingApp() {
           DAO Voting System
         </h1>
 
-        {statusMessage && (
-          <div
-            className={`mb-4 p-3 rounded ${statusType === "error" ? "bg-red-200 text-red-800" : "bg-green-200 text-green-800"}`}
-          >
-            {statusMessage}
-          </div>
-        )}
+        <StatusMessage message={statusMessage} type={statusType} />
 
         {wallet?.address && isRegistered && (
           <Tabs defaultValue="proposals" className="w-full">
             <TabsList>
               <TabsTrigger value="proposals">Proposals</TabsTrigger>
-              <TabsTrigger value="create">Create Proposal</TabsTrigger>
+              {userRole === "admin" && <TabsTrigger value="create">Create Proposal</TabsTrigger>}
               <TabsTrigger value="vote">Vote</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
             </TabsList>
             
             <TabsContent value="proposals">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Active Proposals</CardTitle>
-                  <CardDescription>View and select proposals for voting</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {proposals.map(proposal => (
-                    <Button
-                      key={proposal.id}
-                      variant="outline"
-                      className="w-full mb-2 justify-start"
-                      onClick={() => setSelectedProposal(proposal)}
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      {proposal.title}
-                    </Button>
-                  ))}
-                </CardContent>
-              </Card>
+              <ProposalList proposals={proposals} setSelectedProposal={setSelectedProposal} />
             </TabsContent>
             
-            <TabsContent value="create">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Create New Proposal</CardTitle>
-                  <CardDescription>Submit a new proposal for DAO voting</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Title</Label>
-                      <Input
-                        id="title"
-                        value={newProposal.title}
-                        onChange={(e) => setNewProposal({...newProposal, title: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Input
-                        id="description"
-                        value={newProposal.description}
-                        onChange={(e) => setNewProposal({...newProposal, description: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button onClick={handleCreateProposal}>Create Proposal</Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
+            {userRole === "admin" && (
+              <TabsContent value="create">
+                <CreateProposal newProposal={newProposal} setNewProposal={setNewProposal} handleCreateProposal={handleCreateProposal} />
+              </TabsContent>
+            )}
             
             <TabsContent value="vote">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Cast Your Vote</CardTitle>
-                  <CardDescription>Vote on the selected proposal</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {selectedProposal ? (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">{selectedProposal.title}</h3>
-                      <p>{selectedProposal.description}</p>
-                      <div className="flex space-x-4">
-                        <Button
-                          variant={voteChoice === "yes" ? "default" : "outline"}
-                          onClick={() => setVoteChoice("yes")}
-                        >
-                          <CheckCircle className="mr-2 h-4 w-4" /> Yes
-                        </Button>
-                        <Button
-                          variant={voteChoice === "no" ? "default" : "outline"}
-                          onClick={() => setVoteChoice("no")}
-                        >
-                          <XCircle className="mr-2 h-4 w-4" /> No
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p>Please select a proposal from the Proposals tab.</p>
-                  )}
-                </CardContent>
-                <CardFooter>
-                  <Button onClick={handleVote} disabled={!selectedProposal || !voteChoice}>
-                    <Vote className="mr-2 h-4 w-4" /> Cast Vote
-                  </Button>
-                </CardFooter>
-              </Card>
+              <Vote selectedProposal={selectedProposal} voteChoice={voteChoice} setVoteChoice={setVoteChoice} handleVote={handleVote} />
             </TabsContent>
             
             <TabsContent value="results">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Voting Results</CardTitle>
-                  <CardDescription>View results for completed proposals</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {proposals
-                    .filter(p => p.status === "Completed")
-                    .map(proposal => (
-                      <div key={proposal.id} className="mb-4">
-                        <h3 className="text-lg font-semibold">{proposal.title}</h3>
-                        <div className="flex justify-between mt-2">
-                          <span>Yes: 75%</span>
-                          <span>No: 25%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                          <div className="bg-green-600 h-2.5 rounded-full" style={{width: "75%"}}></div>
-                        </div>
-                      </div>
-                    ))}
-                </CardContent>
-              </Card>
+              <Results proposals={proposals} />
             </TabsContent>
           </Tabs>
         )}
