@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import axios from "axios"
+import axios, { AxiosError } from "axios"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import DAOGeometricBackground from "../components/dao-geometric-background"
-import StatusMessage from "./StatusMessage"
-import ProposalList from "./ProposalList"
-import CreateProposal from "./CreateProposal"
-import Vote from "./Vote"
-import Results from "./Results"
+import StatusMessage from "../components/StatusMessage"
+import ProposalList from "../components/ProposalList"
+import CreateProposal from "../components/CreateProposal"
+import Vote from "../components/Vote"
+import Results from "../components/Results"
 
 // Dummy function for demonstration purposes. Replace with your actual implementation.
 const connectWallet = async () => ({ address: "0x1234567890abcdef" })
@@ -97,52 +97,49 @@ export default function DAOVotingApp() {
       displayStatusMessage("Could not create the proposal.", "error")
     }
   }
-
   const handleVote = async () => {
     if (!selectedProposal || !voteChoice) {
-      setStatusMessage("Please select a proposal and a vote choice.")
-      return
+      setStatusMessage("Please select a proposal and a vote choice.");
+      return;
     }
-
+  
     try {
       const response = await axios.post<{ receipt: string }>("http://127.0.0.1:8080/submit_vote", {
         voter_id: 123, // Replace with actual voter ID (e.g., wallet address)
         proposal_id: selectedProposal.id,
         vote: voteChoice === "yes",
-      })
-
-      const proof = response.data.receipt
-      console.log("Proof received:", proof)
-
+      });
+  
+      const proof = response.data.receipt;
+      console.log("Proof received:", proof);
+  
       // Verify the proof (you can use a library or send it to the backend for verification)
-      setStatusMessage("Your vote has been recorded and verified.")
+      setStatusMessage("Your vote has been recorded and verified.");
     } catch (error) {
-      console.error("Error submitting vote:", error)
-      if (axios.isAxiosError(error)) {
+      console.error("Error submitting vote:", error);
+  
+      if ((error as AxiosError).isAxiosError) {
         if (error.response) {
           // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          console.error("Response data:", error.response.data)
-          console.error("Response status:", error.response.status)
-          console.error("Response headers:", error.response.headers)
-          setStatusMessage(`Failed to submit your vote: ${error.response.data}`)
+          console.error("Response data:", error.response.data);
+          console.error("Response status:", error.response.status);
+          console.error("Response headers:", error.response.headers);
+          setStatusMessage(`Failed to submit your vote: ${error.response.data}`);
         } else if (error.request) {
           // The request was made but no response was received
-          console.error("Request data:", error.request)
-          setStatusMessage("Failed to submit your vote: No response from server.")
+          console.error("Request data:", error.request);
+          setStatusMessage("Failed to submit your vote: No response from server.");
         } else {
           // Something happened in setting up the request that triggered an Error
-          console.error("Error message:", error.message)
-          setStatusMessage(`Failed to submit your vote: ${error.message}`)
+          console.error("Error message:", error.message);
+          setStatusMessage(`Failed to submit your vote: ${error.message}`);
         }
       } else {
-        console.error("Unexpected error:", error)
-        setStatusMessage("An unexpected error occurred.")
+        console.error("Unexpected error:", error);
+        setStatusMessage("An unexpected error occurred.");
       }
     }
-  }
-
-  return (
+  };return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#030303] text-white">
       <DAOGeometricBackground />
       <div className="relative z-10 container mx-auto p-4">
